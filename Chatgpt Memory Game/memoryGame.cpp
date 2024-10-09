@@ -4,41 +4,41 @@
 #include <vector> //vector for the position 
 #include <algorithm> //for the randomizer
 #include <iostream> // standard input output header file for the console 
-#include <fstream> //for the reading and writting of the files
+#include <fstream> //for the reading and writting of the files and storing the highscore of moves 
 #include <cstdlib>
-#include <ctime>
-#include <string>
-#include <random>
+#include <ctime> //timer function
+#include <string> //for the string
+#include <random> //for the randomizer
 
-const int WIDTH = 1024;
-const int HEIGHT = 700;
-const int CARD_SIZE = 120;
-const int GAP = 26;
-const int NUM_IMAGES = 8; 
-const int FLIP_DELAY = 1000; 
+const int WIDTH = 1024; //the width of the window 
+const int HEIGHT = 700; // height of the window
+const int CARD_SIZE = 120; // card size in pixels
+const int GAP = 26; //gap between cards
+const int NUM_IMAGES = 8;  // number of cards
+const int FLIP_DELAY = 1000;  //the time of delay for flipping a card
 
 struct Card {
-    SDL_Texture* texture;
-    bool isFlipped;
-    bool isMatched;
-    int pairId; 
+    SDL_Texture* texture ; //rendering function of the card
+    bool isFlipped; //boolean for checking if the cards is flipped if true the cards is not flipped and if false card is shown 
+    bool isMatched; // to check if card1 and card 2 is matched
+    int pairId; //for the pair of cards and planet and sattalite 
 };
 
 struct CardPair {
-    std::string planetImage;
-    std::string satelliteImage;
+    std::string planetImage; // string name for the planet
+    std::string satelliteImage; //string name for the satallite
 };
 
 struct HighScore {
-    int moves;
-    Uint32 time; 
+    int moves; //for the recording of high score 
+    Uint32 time;  // for the time (Uint32 is an unsigned integer)
 };
 
 //caller for the file in the txt
 HighScore loadHighScore(const std::string& filename) {
     HighScore highScore = { 0, UINT32_MAX }; // Default high score
-    std::ifstream inFile(filename);
-    if (inFile.is_open()) {
+    std::ifstream inFile(filename); 
+    if (inFile.is_open()) { 
         inFile >> highScore.moves >> highScore.time;
         inFile.close();
     }
@@ -74,6 +74,7 @@ void playGame(SDL_Renderer* renderer, SDL_Texture* backgroundTexture, TTF_Font* 
 void cleanupCards(std::vector<Card>& cards);
 void cleanup(SDL_Texture* backgroundTexture);
 void renderText(SDL_Renderer* renderer, TTF_Font* font, const std::string& text, SDL_Color color, int x, int y);
+
 
 void initializeCards(std::vector<Card>& cards, SDL_Renderer* renderer) {
     for (size_t i = 0; i < cardPairs.size(); ++i) {
