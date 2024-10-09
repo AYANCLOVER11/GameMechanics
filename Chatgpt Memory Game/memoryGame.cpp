@@ -134,21 +134,29 @@ void drawCards(SDL_Renderer* renderer, const std::vector<Card>& cards, bool show
 void displayResult(SDL_Renderer* renderer, SDL_Texture* backgroundTexture, Uint32 elapsedTime, int moves, TTF_Font* font) {
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, backgroundTexture, nullptr, nullptr); // Draw background
+    HighScore highScore = loadHighScore("highscore.txt");
 
     // Center the text horizontally, but move it slightly to the left
     int textX = (WIDTH / 2) - 400; // Adjust -50 to your desired left offset
     int textY = HEIGHT / 2 - 100; // Vertical center offset (you can adjust this as needed)
-
     std::string resultMessage = "You solved it in " + std::to_string(elapsedTime) + " seconds and " + std::to_string(moves) + " moves!";
     SDL_Color textColor = { 255, 255, 255 }; // White color for text
 
     // Render the result message at the adjusted position
     renderText(renderer, font, resultMessage, textColor, textX, textY);
 
-    SDL_RenderPresent(renderer);
-  //  SDL_Delay(3000); // Show result for 3 seconds   
+    if (moves < highScore.moves || (moves == highScore.moves )) {
+        std::string resultCongrats = "CONGRATS NEW HIGH SCORE ";
+        renderText(renderer, font, resultCongrats, textColor, textX, HEIGHT / 2 - 140 );
+    }
 
-   // system("pause");
+   
+
+    SDL_RenderPresent(renderer);
+    SDL_Delay(5000); // Show result for 3 seconds
+    system("pause");
+
+
 }
 
 void playGame(SDL_Renderer* renderer, SDL_Texture* backgroundTexture, TTF_Font* font, TTF_Font* resultFont) {
@@ -168,117 +176,118 @@ void playGame(SDL_Renderer* renderer, SDL_Texture* backgroundTexture, TTF_Font* 
     bool waitingForSecondCard = false;
     Uint32 lastFlipTime = 0;
 
+    bool gameRunning = true;
+
     // Score and timer management
     int moves = 0;
     Uint32 startTime = SDL_GetTicks();
+    bool timerStopped = false; // New variable to track timer state
 
-    // Main loop
-    bool running = true;
-    while (running) {
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
-                running = false;
-            }
+    // Main loo
+    while (gameRunning) {
+        bool running = true;
+        while (running) {
+            SDL_Event event;
+            while (SDL_PollEvent(&event)) {
+                if (event.type == SDL_QUIT) {
+                    running = false;
+                }
 
-            if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
-                int mouseX = event.button.x;
-                int mouseY = event.button.y;
+                if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
+                    int mouseX = event.button.x;
+                    int mouseY = event.button.y;
 
-                // Check if mouse is within card boundaries
-                for (size_t i = 0; i < cards.size(); ++i) {
-                    int x = (i % 4) * (CARD_SIZE + GAP) + (WIDTH - (4 * CARD_SIZE + 3 * GAP)) / 2;
-                    int y = (i / 4) * (CARD_SIZE + GAP) + (HEIGHT - (2 * CARD_SIZE + GAP)) / 5; //for the hitbox aka the corresponding event box of the tile
+                    // Check if mouse is within card boundaries
+                    for (size_t i = 0; i < cards.size(); ++i) {
+                        int x = (i % 4) * (CARD_SIZE + GAP) + (WIDTH - (4 * CARD_SIZE + 3 * GAP)) / 2;
+                        int y = (i / 4) * (CARD_SIZE + GAP) + (HEIGHT - (2 * CARD_SIZE + GAP)) / 5;
 
-                    if (mouseX >= x && mouseX <= x + CARD_SIZE &&
-                        mouseY >= y && mouseY <= y + CARD_SIZE) {
-                        // Only flip if the card is not matched or already flipped
-                        if (!cards[i].isMatched && !cards[i].isFlipped && !waitingForSecondCard) {
-                            cards[i].isFlipped = true;
-                            moves++; // incremaent for the move counter 
+                        if (mouseX >= x && mouseX <= x + CARD_SIZE &&
+                            mouseY >= y && mouseY <= y + CARD_SIZE) {
+                            if (!cards[i].isMatched && !cards[i].isFlipped && !waitingForSecondCard) {
+                                cards[i].isFlipped = true;
+                                moves++;
 
-                            // Check if it's the first card clicked
-                            if (firstCardIndex == -1) {
-                                firstCardIndex = i;
-                            }
-                            else {
-                                secondCardIndex = i;
-                                waitingForSecondCard = true;
-                                lastFlipTime = SDL_GetTicks();
+                                if (firstCardIndex == -1) {
+                                    firstCardIndex = i;
+                                }
+                                else {
+                                    secondCardIndex = i;
+                                    waitingForSecondCard = true;
+                                    lastFlipTime = SDL_GetTicks();
 
-                                // Check for match
-                                if (cards[firstCardIndex].pairId == cards[secondCardIndex].pairId) {
-                                    cards[firstCardIndex].isMatched = true;
-                                    cards[secondCardIndex].isMatched = true;
+                                    if (cards[firstCardIndex].pairId == cards[secondCardIndex].pairId) {
+                                        cards[firstCardIndex].isMatched = true;
+                                        cards[secondCardIndex].isMatched = true;
+                                    }
                                 }
                             }
+                            break;
                         }
-                        break;
                     }
                 }
             }
 
-        }
-
-        // Show all cards for 6 seconds
-        Uint32 elapsedTicks = SDL_GetTicks() - startTicks;
-        if (elapsedTicks >= 5000) {
-            showAll = false;
-        }
-
-        // Handle the delay after flipping two cards
-        if (waitingForSecondCard) {
-            if (SDL_GetTicks() - lastFlipTime >= FLIP_DELAY) {
-                if (!cards[firstCardIndex].isMatched) {
-                    cards[firstCardIndex].isFlipped = false;
-                }
-                if (!cards[secondCardIndex].isMatched) {
-                    cards[secondCardIndex].isFlipped = false;
-                }
-                firstCardIndex = -1;
-                secondCardIndex = -1;
-                waitingForSecondCard = false;
+            Uint32 elapsedTicks = SDL_GetTicks() - startTicks;
+            if (elapsedTicks >= 5000) {
+                showAll = false;
             }
-        }
 
-        // Render cards
-        SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, backgroundTexture, nullptr, nullptr);
-        drawCards(renderer, cards, showAll);
-
-        // Render the timer
-        Uint32 elapsedTime = (SDL_GetTicks() - startTime) / 1000;
-        SDL_Color textColor = { 255, 255, 255 };
-        std::string timerMessage = "TIME: " + std::to_string(elapsedTime);
-        renderText(renderer, font, timerMessage, textColor, WIDTH / 2 - 50, 30);
-
-        // Render move count
-        std::string moveMessage = "MOVES: " + std::to_string(moves);
-        renderText(renderer, font, moveMessage, textColor, WIDTH / 2 +350 , 10);
-
-        // Render high scores in the top left corner
-        std::string HighScore = "HIGH SCORE: " ;
-        renderText(renderer, font, HighScore, textColor, 10, 10);
-
-        std::string highScoreMessage = "MOVES: " + std::to_string(highScore.moves);
-        renderText(renderer, font, highScoreMessage, textColor, 10, 40); // Positioned in the top left corner
-
-      
-
-        SDL_RenderPresent(renderer);
-        SDL_Delay(100);
-
-        // Check for game over condition
-        bool allMatched = std::all_of(cards.begin(), cards.end(), [](const Card& card) { return card.isMatched; });
-        if (allMatched) {
-            if (moves < highScore.moves || (moves == highScore.moves && elapsedTime < highScore.time)) {
-                highScore.moves = moves;
-                highScore.time = elapsedTime;
-                saveHighScore("highscore.txt", highScore);
+            if (waitingForSecondCard) {
+                if (SDL_GetTicks() - lastFlipTime >= FLIP_DELAY) {
+                    if (!cards[firstCardIndex].isMatched) {
+                        cards[firstCardIndex].isFlipped = false;
+                    }
+                    if (!cards[secondCardIndex].isMatched) {
+                        cards[secondCardIndex].isFlipped = false;
+                    }
+                    firstCardIndex = -1;
+                    secondCardIndex = -1;
+                    waitingForSecondCard = false;
+                }
             }
-            displayResult(renderer, backgroundTexture, elapsedTime, moves, resultFont);
+
+            SDL_RenderClear(renderer);
+            SDL_RenderCopy(renderer, backgroundTexture, nullptr, nullptr);
+            drawCards(renderer, cards, showAll);
+
+            // Calculate elapsed time only if the timer is not stopped
+            Uint32 elapsedTime = timerStopped ? 0 : (SDL_GetTicks() - startTime) / 1000;
+
+            // Render timer if the timer is not stopped
+            if (!timerStopped) {
+                SDL_Color textColor = { 255, 255, 255 };
+                std::string timerMessage = "TIME: " + std::to_string(elapsedTime);
+                renderText(renderer, font, timerMessage, textColor, WIDTH / 2 - 50, 30);
+            }
+
+            std::string moveMessage = "MOVES: " + std::to_string(moves);
+            renderText(renderer, font, moveMessage, { 255, 255, 255 }, WIDTH / 2 + 350, 10);
+
+            renderText(renderer, font, "HIGH SCORE: ", { 255, 255, 255 }, 10, 10);
+            renderText(renderer, font, "MOVES: " + std::to_string(highScore.moves), { 255, 255, 255 }, 10, 40);
+
+            SDL_RenderPresent(renderer);
+            SDL_Delay(100);
+
+            // Check for game over condition
+            bool allMatched = std::all_of(cards.begin(), cards.end(), [](const Card& card) { return card.isMatched; });
+            if (allMatched) {
+                if (!timerStopped) {
+                    timerStopped = true; // Stop the timer
+                }
+                // Use elapsedTime to check for new high score
+                if (moves < highScore.moves || (moves == highScore.moves && elapsedTime < highScore.time)) {
+                    highScore.moves = moves;
+                    highScore.time = elapsedTime;
+                    saveHighScore("highscore.txt", highScore);
+                }
+                displayResult(renderer, backgroundTexture, elapsedTime, moves, resultFont);
+                gameRunning = false;
+            }
         }
     }
+    
 
     cleanupCards(cards);
 }
@@ -306,6 +315,7 @@ void renderText(SDL_Renderer* renderer, TTF_Font* font, const std::string& text,
     SDL_DestroyTexture(texture);
 }
 
+
 int main(int argc, char* argv[]) {
     srand(static_cast<unsigned>(time(0))); // Seed random number generator
 
@@ -318,10 +328,11 @@ int main(int argc, char* argv[]) {
     TTF_Font* font = TTF_OpenFont("8bitOperatorPlus-Bold.ttf", 24);
     TTF_Font* resultFont = TTF_OpenFont("8bitOperatorPlus-Bold.ttf", 32);
 
-    SDL_Surface* backgroundSurface = IMG_Load("background.png");
+    SDL_Surface* backgroundSurface = IMG_Load("welcome bg.png");
     SDL_Texture* backgroundTexture = SDL_CreateTextureFromSurface(renderer, backgroundSurface);
     SDL_FreeSurface(backgroundSurface);
     std::vector<Card> cards;
+
     playGame(renderer, backgroundTexture, font, resultFont);
 
     cleanupCards(cards);
@@ -334,5 +345,3 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
-
-
