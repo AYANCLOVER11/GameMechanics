@@ -1,10 +1,10 @@
-#include <SDL.h>
-#include <SDL_image.h>
-#include <SDL_ttf.h>
-#include <vector>
-#include <algorithm>
-#include <iostream>
-#include <fstream>
+#include <SDL.h> //header file for the window of the sdl 
+#include <SDL_image.h> //header file for the image 
+#include <SDL_ttf.h> //header file for the costume fonts
+#include <vector> //vector for the position 
+#include <algorithm> //for the randomizer
+#include <iostream> // standard input output header file for the console 
+#include <fstream> //for the reading and writting of the files
 #include <cstdlib>
 #include <ctime>
 #include <string>
@@ -14,14 +14,14 @@ const int WIDTH = 1024;
 const int HEIGHT = 700;
 const int CARD_SIZE = 120;
 const int GAP = 26;
-const int NUM_IMAGES = 8; // Total number of unique images
-const int FLIP_DELAY = 1000; // Time to show the second card in milliseconds
+const int NUM_IMAGES = 8; 
+const int FLIP_DELAY = 1000; 
 
 struct Card {
     SDL_Texture* texture;
     bool isFlipped;
     bool isMatched;
-    int pairId; // Identifier for the card pair
+    int pairId; 
 };
 
 struct CardPair {
@@ -31,10 +31,10 @@ struct CardPair {
 
 struct HighScore {
     int moves;
-    Uint32 time; // In seconds
+    Uint32 time; 
 };
 
-// High score management functions
+//caller for the file in the txt
 HighScore loadHighScore(const std::string& filename) {
     HighScore highScore = { 0, UINT32_MAX }; // Default high score
     std::ifstream inFile(filename);
@@ -45,6 +45,7 @@ HighScore loadHighScore(const std::string& filename) {
     return highScore;
 }
 
+//void updator for the game for new high score
 void saveHighScore(const std::string& filename, const HighScore& highScore) {
     std::ofstream outFile(filename);
     if (outFile.is_open()) {
@@ -53,10 +54,11 @@ void saveHighScore(const std::string& filename, const HighScore& highScore) {
     }
 }
 
+// foor the file names / png for the game
 const std::vector<CardPair> cardPairs = {
     {"Parker - Sun.png", "Sun - Parker.png"},
     {"Venus - venera 7.png", "venera 7 - venus .png"},
-    {"Ceres - dawn.png", "Dawn - Ceres.png"},
+    {"mercury - mariner .png", "mariner - mercury.png"},
     {"Saturn - Cassini.png", "Cassini - saturn.png"},
     {"neptune - voyager 2.png", "voyager 2 - neptune.png"},
     {"Mars- curiosity.png", "Curiosity - Mars.png"},
@@ -143,9 +145,9 @@ void displayResult(SDL_Renderer* renderer, SDL_Texture* backgroundTexture, Uint3
     renderText(renderer, font, resultMessage, textColor, textX, textY);
 
     SDL_RenderPresent(renderer);
-    SDL_Delay(3000); // Show result for 3 seconds   
+  //  SDL_Delay(3000); // Show result for 3 seconds   
 
-    system("pause");
+   // system("pause");
 }
 
 void playGame(SDL_Renderer* renderer, SDL_Texture* backgroundTexture, TTF_Font* font, TTF_Font* resultFont) {
@@ -185,14 +187,14 @@ void playGame(SDL_Renderer* renderer, SDL_Texture* backgroundTexture, TTF_Font* 
                 // Check if mouse is within card boundaries
                 for (size_t i = 0; i < cards.size(); ++i) {
                     int x = (i % 4) * (CARD_SIZE + GAP) + (WIDTH - (4 * CARD_SIZE + 3 * GAP)) / 2;
-                    int y = (i / 4) * (CARD_SIZE + GAP) + (HEIGHT - (2 * CARD_SIZE + GAP)) / 5;
+                    int y = (i / 4) * (CARD_SIZE + GAP) + (HEIGHT - (2 * CARD_SIZE + GAP)) / 5; //for the hitbox aka the corresponding event box of the tile
 
                     if (mouseX >= x && mouseX <= x + CARD_SIZE &&
                         mouseY >= y && mouseY <= y + CARD_SIZE) {
                         // Only flip if the card is not matched or already flipped
                         if (!cards[i].isMatched && !cards[i].isFlipped && !waitingForSecondCard) {
                             cards[i].isFlipped = true;
-                            moves++;
+                            moves++; // incremaent for the move counter 
 
                             // Check if it's the first card clicked
                             if (firstCardIndex == -1) {
@@ -214,11 +216,12 @@ void playGame(SDL_Renderer* renderer, SDL_Texture* backgroundTexture, TTF_Font* 
                     }
                 }
             }
+
         }
 
-        // Show all cards for 3 seconds
+        // Show all cards for 6 seconds
         Uint32 elapsedTicks = SDL_GetTicks() - startTicks;
-        if (elapsedTicks >= 6000) {
+        if (elapsedTicks >= 5000) {
             showAll = false;
         }
 
@@ -246,15 +249,20 @@ void playGame(SDL_Renderer* renderer, SDL_Texture* backgroundTexture, TTF_Font* 
         Uint32 elapsedTime = (SDL_GetTicks() - startTime) / 1000;
         SDL_Color textColor = { 255, 255, 255 };
         std::string timerMessage = "TIME: " + std::to_string(elapsedTime);
-        renderText(renderer, font, timerMessage, textColor, WIDTH / 2 - 50, 20);
+        renderText(renderer, font, timerMessage, textColor, WIDTH / 2 - 50, 30);
 
         // Render move count
         std::string moveMessage = "MOVES: " + std::to_string(moves);
-        renderText(renderer, font, moveMessage, textColor, WIDTH / 2 - 50, 50);
+        renderText(renderer, font, moveMessage, textColor, WIDTH / 2 +350 , 10);
 
         // Render high scores in the top left corner
-        std::string highScoreMessage = "Least Amount of Moves: " + std::to_string(highScore.moves);
-        renderText(renderer, font, highScoreMessage, textColor, 10, 10); // Positioned in the top left corner
+        std::string HighScore = "HIGH SCORE: " ;
+        renderText(renderer, font, HighScore, textColor, 10, 10);
+
+        std::string highScoreMessage = "MOVES: " + std::to_string(highScore.moves);
+        renderText(renderer, font, highScoreMessage, textColor, 10, 40); // Positioned in the top left corner
+
+      
 
         SDL_RenderPresent(renderer);
         SDL_Delay(100);
@@ -273,6 +281,8 @@ void playGame(SDL_Renderer* renderer, SDL_Texture* backgroundTexture, TTF_Font* 
 
     cleanupCards(cards);
 }
+
+
 void cleanupCards(std::vector<Card>& cards) {
     for (auto& card : cards) {
         SDL_DestroyTexture(card.texture);
@@ -323,3 +333,5 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
+
+
