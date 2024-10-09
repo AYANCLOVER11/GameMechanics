@@ -291,6 +291,7 @@ void playGame(SDL_Renderer* renderer, SDL_Texture* backgroundTexture, TTF_Font* 
 
     cleanupCards(cards);
 }
+}
 
 
 void cleanupCards(std::vector<Card>& cards) {
