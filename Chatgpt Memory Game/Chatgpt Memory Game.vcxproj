@@ -24,6 +24,7 @@
     <ProjectGuid>{62b2a3c8-ffcb-40c3-b8e5-1dffe52a1966}</ProjectGuid>
     <RootNamespace>ChatgptMemoryGame</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>MemoryGame2</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

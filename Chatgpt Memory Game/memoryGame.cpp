@@ -1,17 +1,17 @@
-#include <SDL.h> 
-#include <SDL_image.h> 
-#include <SDL_ttf.h> 
-#include <vector> 
-#include <algorithm> 
-#include <iostream> 
-#include <fstream> 
+#include <SDL.h>
+#include <SDL_image.h>
+#include <SDL_ttf.h>
+#include <vector>
+#include <algorithm>
+#include <iostream>
+#include <fstream>
 #include <cstdlib>
-#include <ctime> 
-#include <string> 
+#include <ctime>
+#include <string>
 #include <random>
 
 const int WIDTH = 1024;
-const int HEIGHT = 700;
+const int HEIGHT = 768;
 const int CARD_SIZE = 120;
 const int GAP = 26;
 const int NUM_IMAGES = 8;
@@ -22,11 +22,6 @@ struct Card {
     bool isFlipped;
     bool isMatched;
     int pairId;
-};
-
-struct CardPair {
-    std::string planetImage;
-    std::string satelliteImage;
 };
 
 struct HighScore {
@@ -58,15 +53,15 @@ void saveLeaderboard(const std::string& filename, const std::vector<HighScore>& 
     }
 }
 
-const std::vector<CardPair> cardPairs = {
-    {"Parker - Sun.png", "Sun - Parker.png"},
-    {"Venus - venera 7.png", "venera 7 - venus .png"},
-    {"mercury - mariner .png", "mariner - mercury.png"},
-    {"Saturn - Cassini.png", "Cassini - saturn.png"},
-    {"neptune - voyager 2.png", "voyager 2 - neptune.png"},
-    {"Mars- curiosity.png", "Curiosity - Mars.png"},
-    {"Jupiter (Juno) .png", "Juno - Jupiter.png"},
-    {"Moon - Apollo.png", "Apollo - moon.png"}
+const std::vector<std::pair<std::string, std::string>> cardPairs = {
+    {"blue - earth.png", "earth - blue.png"},
+    {"hell - venus.png", "Venus - hell.png"},
+    {"uranus - tilted.png", "tilted - ur anus.png"},
+    {"Saturn - icy rings.png", "icy rings - saturn.png"},
+    {"caloris - mercury.png", "mercury - caloris .png"},
+    {"Jupiter - red spot.png", "red spot - jupiter.png"},
+    {"Mars- olympus.png", "olympus - mars.png"},
+    {"neptune - dark spot.png", "dark spot - neptune.png"}
 };
 
 void initializeCards(std::vector<Card>& cards, SDL_Renderer* renderer);
@@ -81,8 +76,8 @@ void initializeCards(std::vector<Card>& cards, SDL_Renderer* renderer) {
     for (size_t i = 0; i < cardPairs.size(); ++i) {
         const auto& pair = cardPairs[i];
 
-        SDL_Surface* planetSurface = IMG_Load(pair.planetImage.c_str());
-        SDL_Surface* satelliteSurface = IMG_Load(pair.satelliteImage.c_str());
+        SDL_Surface* planetSurface = IMG_Load(pair.first.c_str());
+        SDL_Surface* satelliteSurface = IMG_Load(pair.second.c_str());
 
         if (planetSurface == nullptr || satelliteSurface == nullptr) {
             std::cerr << "Failed to load image: " << IMG_GetError() << std::endl;
@@ -137,8 +132,8 @@ void displayResult(SDL_Renderer* renderer, SDL_Texture* backgroundTexture, Uint3
     SDL_RenderCopy(renderer, backgroundTexture, nullptr, nullptr);
     std::vector<HighScore> leaderboard = loadLeaderboard("leaderboard.txt");
 
-    int textX = (WIDTH / 2) - 400;
-    int textY = HEIGHT / 2 - 100;
+    int textX = (WIDTH / 2) - 350;
+    int textY = HEIGHT / 2 - 40;
     SDL_Color textColor = { 255, 255, 255 };
     int yOffset = HEIGHT / 2;
 
@@ -150,7 +145,6 @@ void displayResult(SDL_Renderer* renderer, SDL_Texture* backgroundTexture, Uint3
 
     SDL_RenderPresent(renderer);
     SDL_Delay(5000);
-    system("pause");
 }
 
 bool playAgain() {
@@ -171,6 +165,46 @@ bool playAgain() {
     }
 }
 
+std::string getInputText(SDL_Renderer* renderer, TTF_Font* font, SDL_Texture* backgroundTexture) {
+    std::string inputText;
+    bool inputActive = true;
+    SDL_StartTextInput(); // Start text input
+
+    while (inputActive) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                inputActive = false;
+                break;
+            }
+            if (event.type == SDL_TEXTINPUT) {
+                inputText += event.text.text; // Add new text
+            }
+            if (event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.sym == SDLK_BACKSPACE && !inputText.empty()) {
+                    inputText.pop_back(); // Remove last character
+                }
+                if (event.key.keysym.sym == SDLK_RETURN) {
+                    inputActive = false; // Finish input on Enter
+                }
+            }
+        }
+
+        SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, backgroundTexture, nullptr, nullptr); // Use your background
+        SDL_Color textColor = { 255, 255, 255 };
+        renderText(renderer, font, "Enter your name:", textColor, WIDTH / 2 - 100, HEIGHT / 2 - 50);
+        renderText(renderer, font, inputText, textColor, WIDTH / 2 - 100, HEIGHT / 2);
+
+        SDL_RenderPresent(renderer);
+        SDL_Delay(100);
+    }
+
+    SDL_StopTextInput(); // Stop text input
+    return inputText;
+}
+
+
 void playGame(SDL_Renderer* renderer, SDL_Texture* backgroundTexture, TTF_Font* font, TTF_Font* resultFont) {
     std::vector<HighScore> leaderboard = loadLeaderboard("leaderboard.txt");
     bool gameRunning = true;
@@ -179,17 +213,40 @@ void playGame(SDL_Renderer* renderer, SDL_Texture* backgroundTexture, TTF_Font* 
         std::vector<Card> cards;
         initializeCards(cards, renderer);
 
-        Uint32 startTicks = SDL_GetTicks();
+        // Show all cards for 5 seconds before starting the game
+        Uint32 showAllStart = SDL_GetTicks();
         bool showAll = true;
 
+        while (showAll) {
+            SDL_Event event;
+            while (SDL_PollEvent(&event)) {
+                if (event.type == SDL_QUIT) {
+                    gameRunning = false;
+                    showAll = false;
+                }
+            }
+
+            SDL_RenderClear(renderer);
+            SDL_RenderCopy(renderer, backgroundTexture, nullptr, nullptr);
+            drawCards(renderer, cards, true);
+            SDL_RenderPresent(renderer);
+
+            // Stop showing cards after 5 seconds
+            if (SDL_GetTicks() - showAllStart >= 5000) {
+                showAll = false;
+            }
+        }
+
+        // Now start the main game loop
+        Uint32 startTime = SDL_GetTicks();
+        bool timerStopped = false;
+        int moves = 0;
+
+        // Declare indices for the selected cards here
         int firstCardIndex = -1;
         int secondCardIndex = -1;
         bool waitingForSecondCard = false;
         Uint32 lastFlipTime = 0;
-
-        int moves = 0;
-        Uint32 startTime = SDL_GetTicks();
-        bool timerStopped = false;
 
         while (true) {
             SDL_Event event;
@@ -236,11 +293,7 @@ void playGame(SDL_Renderer* renderer, SDL_Texture* backgroundTexture, TTF_Font* 
                     }
                 }
 
-                Uint32 elapsedTicks = SDL_GetTicks() - startTicks;
-                if (elapsedTicks >= 5000) {
-                    showAll = false;
-                }
-
+                // Handle waiting for second card logic
                 if (waitingForSecondCard) {
                     if (SDL_GetTicks() - lastFlipTime >= FLIP_DELAY) {
                         if (!cards[firstCardIndex].isMatched) {
@@ -257,15 +310,12 @@ void playGame(SDL_Renderer* renderer, SDL_Texture* backgroundTexture, TTF_Font* 
 
                 SDL_RenderClear(renderer);
                 SDL_RenderCopy(renderer, backgroundTexture, nullptr, nullptr);
-                drawCards(renderer, cards, showAll);
+                drawCards(renderer, cards, false); // Show cards based on their state
 
-                Uint32 elapsedTime = timerStopped ? 0 : (SDL_GetTicks() - startTime) / 1000;
-
-                if (!timerStopped) {
-                    SDL_Color textColor = { 255, 255, 255 };
-                    std::string timerMessage = "TIME: " + std::to_string(elapsedTime);
-                    renderText(renderer, font, timerMessage, textColor, WIDTH / 2 - 50, 30);
-                }
+                Uint32 elapsedTime = (SDL_GetTicks() - startTime) / 1000;
+                SDL_Color textColor = { 255, 255, 255 };
+                std::string timerMessage = "TIME: " + std::to_string(elapsedTime);
+                renderText(renderer, font, timerMessage, textColor, WIDTH / 2 - 50, 30);
 
                 std::string moveMessage = "MOVES: " + std::to_string(moves);
                 renderText(renderer, font, moveMessage, { 255, 255, 255 }, WIDTH / 2 + 350, 10);
@@ -273,16 +323,16 @@ void playGame(SDL_Renderer* renderer, SDL_Texture* backgroundTexture, TTF_Font* 
                 SDL_RenderPresent(renderer);
                 SDL_Delay(100);
 
+                // Check if all cards are matched
                 bool allMatched = std::all_of(cards.begin(), cards.end(), [](const Card& card) { return card.isMatched; });
                 if (allMatched) {
                     if (!timerStopped) {
                         timerStopped = true;
                     }
-                    Uint32 elapsedTime = (SDL_GetTicks() - startTime) / 1000;
 
-                    std::string playerName;
-                    std::cout << "Enter your name: ";
-                    std::cin >> playerName;
+                    // Get player name using text input
+                    std::string playerName = getInputText(renderer, font, backgroundTexture);
+
 
                     HighScore newScore = { playerName, moves, elapsedTime };
                     leaderboard.push_back(newScore);
@@ -326,6 +376,8 @@ void renderText(SDL_Renderer* renderer, TTF_Font* font, const std::string& text,
     SDL_RenderCopy(renderer, texture, nullptr, &dstRect);
     SDL_DestroyTexture(texture);
 }
+
+
 
 int main(int argc, char* argv[]) {
     srand(static_cast<unsigned>(time(0)));
