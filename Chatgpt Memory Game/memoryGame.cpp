@@ -43,6 +43,7 @@ std::vector<HighScore> loadLeaderboard(const std::string& filename) {
     return leaderboard;
 }
 
+
 void saveLeaderboard(const std::string& filename, const std::vector<HighScore>& leaderboard) {
     std::ofstream outFile(filename);
     if (outFile.is_open()) {
@@ -135,11 +136,12 @@ void displayResult(SDL_Renderer* renderer, SDL_Texture* backgroundTexture, Uint3
     int textX = (WIDTH / 2) - 350;
     int textY = HEIGHT / 2 - 40;
     SDL_Color textColor = { 255, 255, 255 };
-    int yOffset = HEIGHT / 2;
-
+    int yOffset = HEIGHT / 2 - 40;
+    std::string leaderboardTOP = "LEADERBOARD";
+    renderText(renderer, font, leaderboardTOP, textColor, textX + 250 , textY - 300);
     for (const auto& score : leaderboard) {
         std::string leaderboardEntry = score.playerName + ": " + std::to_string(score.moves) + " moves, " + std::to_string(score.time) + " seconds";
-        renderText(renderer, font, leaderboardEntry, textColor, textX, yOffset);
+        renderText(renderer, font, leaderboardEntry, textColor, textX + 20, yOffset - 230  );
         yOffset += 30;
     }
 
@@ -193,8 +195,8 @@ std::string getInputText(SDL_Renderer* renderer, TTF_Font* font, SDL_Texture* ba
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, backgroundTexture, nullptr, nullptr); // Use your background
         SDL_Color textColor = { 255, 255, 255 };
-        renderText(renderer, font, "Enter your name:", textColor, WIDTH / 2 - 100, HEIGHT / 2 - 50);
-        renderText(renderer, font, inputText, textColor, WIDTH / 2 - 100, HEIGHT / 2);
+        renderText(renderer, font, "Enter your name:", textColor, WIDTH / 2 - 100, HEIGHT / 2 - 120);
+        renderText(renderer, font, inputText, textColor, WIDTH / 2 - 50, HEIGHT / 2);
 
         SDL_RenderPresent(renderer);
         SDL_Delay(100);
